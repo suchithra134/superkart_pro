@@ -29,26 +29,15 @@ def predict_sales():
     It expects a JSON payload containing product and store details and returns
     the predicted sales as a JSON response.
     """
-    # Get the JSON data from the request body
+    # Get the JSON data directly from the request body
     input_data_json = request.get_json()
 
-    # Extract relevant features from the JSON data
-    # Ensure features match those used in model training
-    sample = {
-        'Product_Weight': input_data_json['Product_Weight'],
-        'Product_Sugar_Content': input_data_json['Product_Sugar_Content'],
-        'Product_Allocated_Area': input_data_json['Product_Allocated_Area'],
-        'Product_MRP': input_data_json['Product_MRP'],
-        'Store_Size': input_data_json['Store_Size'],
-        'Store_Location_City_Type': input_data_json['Store_Location_City_Type'],
-        'Store_Type': input_data_json['Store_Type'],
-        'Product_Id_char': input_data_json['Product_Id_char'],
-        'Store_Age_Years': input_data_json['Store_Age_Years'],
-        'Product_Type_Category': input_data_json['Product_Type_Category']
-    }
+    # Convert the JSON dictionary directly into a Pandas DataFrame
+    input_df = pd.DataFrame([input_data_json])
 
-    # Convert the extracted data into a Pandas DataFrame
-    input_df = pd.DataFrame([sample])
+    # Ensure Store_Id is present for preprocessor compatibility
+    if 'Store_Id' not in input_df.columns:
+        input_df['Store_Id'] = 'OUT018'
 
     # Preprocess the input data using the loaded preprocessor
     input_processed = preprocessor.transform(input_df)
@@ -56,12 +45,11 @@ def predict_sales():
     # Make prediction
     prediction = model.predict(input_processed)[0]
 
-    # Convert predicted_price to Python float and round it
+    # Convert predicted price to Python float and round it
     predicted_sales = round(float(prediction), 2)
 
     # Return the predicted sales
     return jsonify({'Predicted Product_Store_Sales_Total': predicted_sales})
-
 
 # Define an endpoint for batch prediction (POST request)
 @superkart_sales_predictor_api.post('/v1/predictbatch')
@@ -76,6 +64,10 @@ def predict_sales_batch():
 
     # Read the CSV file into a Pandas DataFrame
     input_df_batch = pd.read_csv(file)
+
+    # Ensure Store_Id is present for preprocessor compatibility
+    if 'Store_Id' not in input_df_batch.columns:
+        input_df_batch['Store_Id'] = 'OUT018'
 
     # Preprocess the batch input data using the loaded preprocessor
     input_processed_batch = preprocessor.transform(input_df_batch)
